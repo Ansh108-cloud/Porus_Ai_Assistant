@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# AI / ML
+*.pt
+*.onnx
+*.h5
+*.bin
+*.model
+*.zip
+*.wav
+*.mp3
+
+# OS
+.DS_Store
+Thumbs.db
+sd_env/
+
+# Virtual env
+sd_env/
+
+# Generated files
+generated_images/
