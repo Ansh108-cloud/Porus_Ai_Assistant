@@ -11,3 +11,4 @@ pandas
 Pillow
 opencv-python
 newsapi-python
+pywhatkit
