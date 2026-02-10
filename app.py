@@ -8,7 +8,7 @@ from groq import Groq
 # ================= CONFIG =================
 st.set_page_config(page_title="Porus AI – Cloud", layout="wide")
 
-client = Groq(api_key=st.secrets["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"])
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 WEATHER_API_KEY = "a81cd6f2d72b04886cfe9461dac80c2a"
 
 # ================= SESSION =================
