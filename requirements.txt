@@ -1,14 +1,5 @@
 streamlit
 wikipedia
 requests
-pyttsx3
-SpeechRecognition
-gTTS
 beautifulsoup4
 lxml
-numpy
-pandas
-Pillow
-opencv-python
-newsapi-python
-pywhatkit
