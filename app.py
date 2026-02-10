@@ -2,103 +2,74 @@ import streamlit as st
 import wikipedia
 import requests
 import datetime
-import os
 from bs4 import BeautifulSoup
+from groq import Groq
 
 # ================= CONFIG =================
-st.set_page_config(
-    page_title="Porus AI Cloud",
-    layout="wide"
-)
+st.set_page_config(page_title="Porus AI – Cloud", layout="wide")
 
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 WEATHER_API_KEY = "a81cd6f2d72b04886cfe9461dac80c2a"
 
 # ================= SESSION =================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# ================= CORE FUNCTIONS =================
+# ================= AI CHAT =================
+def ai_chat(prompt):
+    response = client.chat.completions.create(
+        model="llama-3.1-8b-instant",
+        messages=[
+            {"role": "system", "content": "You are Porus AI, a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ],
+        max_tokens=500,
+        temperature=0.7
+    )
+    return response.choices[0].message.content
 
+# ================= COMMANDS =================
 def get_weather(cmd):
     city = cmd.replace("weather", "").replace("in", "").strip()
-    if not city:
-        return "Please tell me a city name."
-
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={WEATHER_API_KEY}&units=metric"
     res = requests.get(url).json()
-
     if res.get("cod") != 200:
         return "City not found."
-
-    return (
-        f"🌤 Weather in {city.title()}\n\n"
-        f"Condition: {res['weather'][0]['description'].title()}\n"
-        f"Temperature: {res['main']['temp']}°C\n"
-        f"Humidity: {res['main']['humidity']}%\n"
-        f"Wind: {res['wind']['speed']} m/s"
-    )
+    return f"🌤 {city.title()}: {res['main']['temp']}°C, {res['weather'][0]['description']}"
 
 def get_news():
-    try:
-        res = requests.get("https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en")
-        soup = BeautifulSoup(res.content, "xml")
-        item = soup.find("item")
-        return "📰 " + item.title.text
-    except:
-        return "Failed to fetch news."
+    res = requests.get("https://news.google.com/rss?hl=en-IN&gl=IN&ceid=IN:en")
+    soup = BeautifulSoup(res.content, "xml")
+    return "📰 " + soup.find("item").title.text
 
-def process_command(cmd):
-    cmd = cmd.lower()
-
-    if "weather" in cmd:
-        return get_weather(cmd)
-
-    elif "news" in cmd:
+def process_input(text):
+    t = text.lower()
+    if "weather" in t:
+        return get_weather(t)
+    if "news" in t:
         return get_news()
-
-    elif "who is" in cmd or "wikipedia" in cmd:
+    if "who is" in t or "wikipedia" in t:
         try:
-            query = cmd.replace("who is", "").replace("wikipedia", "").strip()
-            return wikipedia.summary(query, sentences=2)
+            return wikipedia.summary(text, sentences=2)
         except:
             return "No information found."
-
-    elif "time" in cmd:
-        return f"⏰ Current time: {datetime.datetime.now().strftime('%H:%M:%S')}"
-
-    else:
-        return "🤖 Cloud mode active. Voice, image generation & automation are available only in Local Mode."
+    return ai_chat(text)
 
 # ================= UI =================
-
-st.markdown("""
-<style>
-.stApp { background-color: #0f0f0f; color: white; }
-.chat { padding: 12px; border-radius: 10px; margin-bottom: 10px; }
-.user { background: #1f6feb; }
-.bot { background: #21262d; }
-</style>
-""", unsafe_allow_html=True)
-
 st.title("🤖 Porus AI – Cloud Edition")
-st.caption("Lightweight AI running on Streamlit Cloud")
+st.caption("Real Chat AI powered by Groq")
 
-for msg in st.session_state.messages:
-    role = "user" if msg["role"] == "user" else "assistant"
-    color = "user" if role == "user" else "bot"
-    st.markdown(f"<div class='chat {color}'>{msg['content']}</div>", unsafe_allow_html=True)
+for m in st.session_state.messages:
+    with st.chat_message(m["role"]):
+        st.markdown(m["content"])
 
-prompt = st.chat_input("Ask Porus AI (Cloud Mode)...")
+prompt = st.chat_input("Ask Porus AI...")
 
 if prompt:
     st.session_state.messages.append({"role": "user", "content": prompt})
-    response = process_command(prompt)
-    st.session_state.messages.append({"role": "assistant", "content": response})
-    st.rerun()
+    with st.chat_message("assistant"):
+        reply = process_input(prompt)
+        st.markdown(reply)
+    st.session_state.messages.append({"role": "assistant", "content": reply})
 
-st.sidebar.markdown("### ⚠️ Cloud Limitations")
-st.sidebar.info(
-    "Voice, Image Generation, Camera, Automation\n"
-    "are disabled on Streamlit Cloud.\n\n"
-    "Run Local Mode for full features."
-)
+st.sidebar.info("⚠️ Voice, Image, Camera & Automation are Local-only features.")
